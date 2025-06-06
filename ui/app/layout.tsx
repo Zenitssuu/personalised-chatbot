@@ -5,7 +5,7 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/toaster";
 import ReactQueryProvider from "@/components/ReactQueryProvider";
-import { CookiesProvider } from "next-client-cookies/server";
+import ReduxProvider from "@/components/ReduxProvider";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -31,7 +31,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        <CookiesProvider>
+        <ReduxProvider>
           <ReactQueryProvider>
             <ThemeProvider
               attribute="class"
@@ -43,7 +43,7 @@ export default function RootLayout({
               <Toaster />
             </ThemeProvider>
           </ReactQueryProvider>
-        </CookiesProvider>
+        </ReduxProvider>
       </body>
     </html>
   );

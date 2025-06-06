@@ -4,10 +4,10 @@ import { Session } from "../models/Sessions.model.js";
 const saveMessage = async (sessionId, role, text, userId) => {
   // console.log(sessionId,role,text);
 
-  await Message.create({ sessionId, role, text });
+  await Message.create({ sessionId, role, text, userId });
   const exists = await Session.exists({ sessionId });
   if (!exists) {
-    await Session.create({ sessionId });
+    await Session.create({ sessionId, userId });
   }
 };
 

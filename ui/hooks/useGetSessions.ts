@@ -3,19 +3,21 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { log } from "console";
-import { useCookies } from "next-client-cookies";
+import { useSelector } from "react-redux";
+import { RootState } from "@/lib/stores/store";
 
 axios.defaults.baseURL = process.env.NEXT_PUBLIC_BASE_URL;
 
 export const useGetSessions = () => {
-  const [token, setToken] = useState<string | null>(null);
-  useEffect(() => {
-    const userToken = localStorage.getItem("token");
-    if (userToken) {
-      setToken(userToken);
-    }
-  }, []);
+  // const [token, setToken] = useState<string | null>(null);
+  const token = useSelector((state: RootState) => state.user.token);
+
+  // useEffect(() => {
+  //   const userToken = localStorage.getItem("token");
+  //   if (userToken) {
+  //     setToken(userToken);
+  //   }
+  // }, []);
   // const token = localStorage.getItem('token');
 
   // console.log(token);

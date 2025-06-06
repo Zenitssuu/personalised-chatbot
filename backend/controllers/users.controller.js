@@ -25,13 +25,13 @@ export const createUser = async (req, res) => {
     const token = jwt.sign({ userId: user._id, email: user.email }, JWT_SECRET);
     // console.log(token);
 
-    res.cookie("token", token, {
-      httpOnly: true, // ⛔ Can't be accessed via JS (important!)
-      secure: false, // Set true if HTTPS (use with production)
-      sameSite: "strict", // CSRF protection
-      maxAge: 3600000, // 1 hour
-      path: "/",
-    });
+    // res.cookie("token", token, {
+    //   httpOnly: true, // ⛔ Can't be accessed via JS (important!)
+    //   secure: false, // Set true if HTTPS (use with production)
+    //   sameSite: "strict", // CSRF protection
+    //   maxAge: 3600000, // 1 hour
+    //   path: "/",
+    // });
     // console.log("Set-Cookie header:", res.getHeaders()["set-cookie"]);
 
     return res
@@ -54,13 +54,13 @@ export const loginUser = async (req, res) => {
     if (!valid) return res.status(401).json({ error: "Invalid credentials" });
 
     const token = jwt.sign({ userId: user._id, email: user.email }, JWT_SECRET);
-    res.cookie("token", token, {
-      httpOnly: true, // ⛔ Can't be accessed via JS (important!)
-      secure: false, // Set true if HTTPS (use with production)
-      sameSite: "strict", // CSRF protection
-      maxAge: 3600000, // 1 hour
-      path: "/",
-    });
+    // res.cookie("token", token, {
+    //   httpOnly: true, // ⛔ Can't be accessed via JS (important!)
+    //   secure: false, // Set true if HTTPS (use with production)
+    //   sameSite: "strict", // CSRF protection
+    //   maxAge: 3600000, // 1 hour
+    //   path: "/",
+    // });
 
     // console.log("Set-Cookie header:", res.getHeaders()["set-cookie"]);
 

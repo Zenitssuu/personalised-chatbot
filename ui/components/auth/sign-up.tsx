@@ -11,6 +11,8 @@ import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { useCreateUser } from "@/hooks/useUserReq";
+import { setToken } from "@/lib/stores/features/auth/authSlice";
+import { useDispatch } from "react-redux";
 
 export function SignUp() {
   const [name, setName] = useState("");
@@ -22,6 +24,8 @@ export function SignUp() {
   const { toast } = useToast();
   const { createUserAsync, isError, isSuccess, error, isPending } =
     useCreateUser();
+
+  const dispatch = useDispatch();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,7 +55,8 @@ export function SignUp() {
     try {
       const user = await createUserAsync({ email, password, name });
       const userToken = user?.token;
-      localStorage.setItem("token", userToken);
+      // localStorage.setItem("token", userToken);
+      dispatch(setToken(userToken.token));
       toast({
         title: "Success",
         description: "You have been signed in successfully",
@@ -83,12 +88,12 @@ export function SignUp() {
     show: { opacity: 1, y: 0 },
   };
 
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      router.replace("/dashboard");
-    }
-  }, []);
+  // useEffect(() => {
+  //   const token = localStorage.getItem("token");
+  //   if (token) {
+  //     router.replace("/dashboard");
+  //   }
+  // }, []);
 
   return (
     <motion.div

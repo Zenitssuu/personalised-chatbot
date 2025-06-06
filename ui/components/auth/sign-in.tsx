@@ -12,6 +12,8 @@ import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { useCreateUser, useLoginUser } from "@/hooks/useUserReq";
+import { useDispatch } from "react-redux";
+import { setToken } from "@/lib/stores/features/auth/authSlice";
 
 export function SignIn() {
   const [email, setEmail] = useState("");
@@ -20,6 +22,8 @@ export function SignIn() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
+
+  const dispatch = useDispatch();
 
   const { loginUserAsync, isPending, isError, isSuccess, error } =
     useLoginUser();
@@ -37,21 +41,13 @@ export function SignIn() {
 
     setIsLoading(true);
 
-    // // Simulate authentication
-    // setTimeout(() => {
-    //   setIsLoading(false);
-    //   toast({
-    //     title: "Success",
-    //     description: "You have been signed in successfully",
-    //   });
-    //   router.push("/dashboard");
-    // }, 1500);
-
     try {
       const user = await loginUserAsync({ email, password });
       const userToken = user?.token;
 
-      localStorage.setItem("token", userToken);
+      // localStorage.setItem("token", userToken);
+
+      dispatch(setToken(userToken));
       toast({
         title: "Success",
         description: "You have been signed in successfully",
@@ -61,17 +57,17 @@ export function SignIn() {
     } catch (error) {
       toast({
         title: "Error",
-        description: "Sigup failed",
+        description: "Sigin failed",
       });
       setIsLoading(false);
       return;
     }
   };
 
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (token) router.replace("/dashboard");
-  }, []);
+  // useEffect(() => {
+  //   const token = localStorage.getItem("token");
+  //   if (token) router.replace("/dashboard");
+  // }, []);
 
   const formControls = {
     hidden: { opacity: 0 },

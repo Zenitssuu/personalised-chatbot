@@ -21,10 +21,15 @@ import { motion, AnimatePresence } from "framer-motion";
 import { cleanForSpeech } from "./cleanspeech";
 import { EnhancedVoiceInput } from "@/components/enhanced-voice-input";
 import { useGetSessions } from "@/hooks/useGetSessions";
+import { useDispatch, useSelector } from "react-redux";
+import { persistor, RootState } from "@/lib/stores/store";
+import { clearToken } from "@/lib/stores/features/auth/authSlice";
+import axios from "axios";
 
 export default function Dashboard() {
   const ws = useRef<WebSocket | null>(null);
   const voice = useFixedVoice();
+  const dispatch = useDispatch();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [isListening, setIsListening] = useState(false);
@@ -51,21 +56,25 @@ export default function Dashboard() {
       messages: [],
     },
   ]);
-
   const { data, error, isLoading } = useGetSessions();
 
   // console.log(allData);
-  // console.log("data", data);
+  console.log("data", data);
   // console.log("error", error);
-
-  const [currentConversationId, setCurrentConversationId] = useState("1");
+  const [currentConversationId, setCurrentConversationId] = useState<
+    string | null
+  >(null);
   const [autoTTS, setAutoTTS] = useState(true);
-  const [isSummaryOpen, setIsSummaryOpen] = useState(true);
+  const [isSummaryOpen, setIsSummaryOpen] = useState(false);
 
   const isMobile = useMobile();
   const messageEndRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const { toast } = useToast();
+
+  const storedToken = useSelector((state: RootState) => state.user.token);
+  const userId = useSelector((state: RootState) => state.user.decoded?.userId);
+  // console.log(userId);
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -125,6 +134,8 @@ export default function Dashboard() {
           payload: transcript,
           persona: selectedPersona,
           sessionId: currentConversationId,
+          token: storedToken,
+          clientUserId: userId,
         })
       );
     };
@@ -135,6 +146,46 @@ export default function Dashboard() {
     };
 
     recognition.start();
+  };
+
+  const playTTS = async (
+    text: string,
+    voiceId: string = "9BWtsMINqrJLrRacOk9x"
+  ) => {
+    try {
+      const res = await fetch("/api/tts", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ text, voiceId }),
+      });
+
+      if (!res.ok) {
+        console.error("TTS failed");
+        return;
+      }
+
+      const audioData = await res.arrayBuffer();
+      const audioBlob = new Blob([audioData], { type: "audio/mpeg" });
+      const audioUrl = URL.createObjectURL(audioBlob);
+      const audio = new Audio(audioUrl);
+
+      return new Promise<void>((resolve) => {
+        audio.onended = () => {
+          setIsSpeaking(false);
+          resolve();
+        };
+        audio.onerror = () => {
+          setIsSpeaking(false);
+          resolve(); // still resolve on error to prevent UI lock
+        };
+        setIsSpeaking(true);
+        audio.play();
+      });
+    } catch (error) {
+      console.error("Error playing TTS:", error);
+    }
   };
 
   const handleNewConversation = () => {
@@ -222,20 +273,22 @@ export default function Dashboard() {
     });
   };
 
-  const handleSignOut = () => {
+  const handleSignOut = async () => {
     // In a real app, you would handle sign out logic here
+    dispatch(clearToken());
+    await persistor.purge();
     toast({
       title: "Signing out",
       description: "You have been signed out successfully.",
     });
     setTimeout(() => {
-      router.push("/auth/sign-in");
-    }, 1500);
+      router.push("/");
+    }, 500);
   };
 
   const getCurrentConversationTitle = () => {
-    const currentConversation = conversations.find(
-      (conv) => conv.id === currentConversationId
+    const currentConversation = conversations?.find(
+      (conv) => conv?.id === currentConversationId
     );
     return currentConversation?.title || "New Conversation";
   };
@@ -246,9 +299,24 @@ export default function Dashboard() {
 
   // directed routes
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      router.replace("/auth/sign-in");
+    if (storedToken === null || userId === null) router.back();
+  }, []);
+
+  //getting token from localstorage
+  // useEffect(() => {
+  //   const storedToken = localStorage.getItem("token");
+  //   setToken(storedToken);
+  // }, []);
+
+  //conversation id
+  useEffect(() => {
+    const existingId = sessionStorage.getItem("conversationId");
+    if (existingId) {
+      setCurrentConversationId(existingId);
+    } else {
+      const newId = uuidv4();
+      sessionStorage.setItem("conversationId", newId);
+      setCurrentConversationId(newId);
     }
   }, []);
 
@@ -261,34 +329,34 @@ export default function Dashboard() {
       console.log("✅ WebSocket connected");
     };
 
-    ws.current.onmessage = (event) => {
+    ws.current.onmessage = async (event) => {
       const { type, payload } = JSON.parse(event.data);
 
       if (type === "llm-response") {
+        if (autoTTS) {
+          const cleanedMessage = cleanForSpeech(payload);
+          // const utterance = new SpeechSynthesisUtterance(cleanedMessage);
+
+          // if (voice) {
+          //   utterance.voice = voice;
+          //   utterance.pitch = 1.1;
+          //   utterance.rate = 0.95;
+          //   utterance.volume = 1;
+          // }
+          // speechSynthesis.speak(utterance);
+          // setIsSpeaking(true);
+
+          // utterance.onend = () => setIsSpeaking(false);
+
+          await playTTS(cleanedMessage);
+        }
         const assistantMessage: Message = {
           id: Date.now().toString(),
           content: payload,
           sender: "assistant",
           timestamp: new Date().toISOString(),
         };
-
         setMessages((prev) => [...prev, assistantMessage]);
-
-        if (autoTTS) {
-          const cleanedMessage = cleanForSpeech(payload);
-          const utterance = new SpeechSynthesisUtterance(cleanedMessage);
-
-          if (voice) {
-            utterance.voice = voice;
-            utterance.pitch = 1.1;
-            utterance.rate = 0.95;
-            utterance.volume = 1;
-          }
-          speechSynthesis.speak(utterance);
-          setIsSpeaking(true);
-
-          utterance.onend = () => setIsSpeaking(false);
-        }
 
         // Optionally trigger summary update here
       }

@@ -17,6 +17,8 @@ export const getAllSessions = async (req, res) => {
 
     const total = await Session.countDocuments({ userId });
 
+    console.log(sessions);
+
     return res.status(200).json({
       sessions: sessions.map((s) => ({
         id: s.sessionId,
